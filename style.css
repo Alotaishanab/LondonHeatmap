@@ -1,0 +1,710 @@
+@font-face {
+    font-family: "Traja pro";
+    src: url(font/TrajanPro-Bold.otf);
+}
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: 'Lato', sans-serif;
+}
+html body{
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Map page */
+.map{
+    margin-top: -18px;
+}
+.map{
+    min-width: 100%;
+}
+.levels-section{
+    margin-top: -50px;
+    position: relative;
+    z-index: 999;
+}
+.levels-div{
+    background-color: #FFFFFF;
+    box-shadow: 0 0 14px 0 #00000014;
+    padding-top: 40px;
+    padding-bottom: 30px;
+    border-radius: 40px;
+    padding-inline: 40px;
+}
+.levels-flex{
+    display: flex;
+    justify-content: center;
+    gap: 120px;
+    margin-top: 40px;
+}
+.levels{
+    display: flex;
+    gap: 20px;
+    list-style: none;
+    padding: 0;
+    text-align: center;
+    justify-content: center;
+    margin-top: 20px;
+}
+.levels li h6{
+    padding-top: 10px;
+    font-weight: bold;
+}
+.c1{
+    background-color: #FF0102;
+    border-radius: 50px;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;
+}
+.c2{
+    background-color: #0080F8;
+    border-radius: 50px;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;
+}
+.c3{
+    background-color: #08FFFB;
+    border-radius: 50px;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;
+}
+.c4{
+    background-color: #03FB01;
+    border-radius: 50px;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;
+}
+.c-head{
+    font-weight: bold;
+    padding-bottom: 20px;
+    text-align: center;
+}
+.c-head-2{
+    font-weight: bold;
+    padding-bottom: 20px;
+}
+.method{
+    padding-top: 60px;
+}
+.feedback{
+    background-color: #F6F6F6;
+    padding-top: 50px;
+    padding-bottom: 100px;
+    margin-top: 60px;
+}
+.feedback h5{
+    color: #4E5D4A;
+    font-family: "Traja pro";
+}
+.feedback h1{
+    font-weight: bold;
+    font-family: "Traja pro";
+    font-size: 48px;
+    width: 60%;
+}
+.f-contact{
+    background-color: #4E5D4A;
+    border-radius: 25px;
+    padding: 30px 0 40px 0;
+    text-align: center;
+    color: #FFFFFF;
+    margin-top: -70px;
+}
+.mail-link{
+    color: white !important;
+    text-decoration: none;
+    font-size: 20px;
+}
+.t-table-section{
+    margin-top: 60px;
+    padding-block: 20px;
+    padding-inline: 40px;
+    background-color: #F6F6F6;
+    border-radius: 25px;
+}
+caption{
+    caption-side: top;
+    font-size: 30px;
+    padding-bottom: 20px;
+}
+.table{
+    text-align: center;
+}
+thead{
+    background-color: #EDEDED;
+}
+.toggle-search{
+    background-color: #FAFAFA;
+    border-radius: 25px;
+    padding: 30px;
+}
+.heat-toggle-btn{
+    background-color: #4E5D4A !important;
+    color: #FFFFFF !important;
+    border-radius: 50px;
+    padding-inline: 30px;
+    padding-block: 10px;
+}
+.toggle-search{
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+.t-input-div{
+    display: flex;
+}
+.toggle-input{
+    width: 400px;
+}
+.t-input-div button{
+    margin-left: -30px;
+}
+.toggle-input input{
+    width: 100%;
+    padding-block: 10px;
+    border-radius: 50px;
+    border: 0;
+}
+.s-div{
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding-inline: 150px;
+    padding-bottom: 50px;
+}
+.table-select{
+    background-color: #4E5D4A;
+    color: #FFFFFF;
+    padding: 10px 15px;
+    width: 100%;
+    border-radius: 50px;
+}
+
+
+
+/* Responsiveness */
+@media screen and (max-width: 767px){
+    html{
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+    .navbar-toggler{
+        margin-top: -60px;
+    }
+    .navbar-nav , .login-div{
+        margin-top: 0;
+    }
+    .navbar-collapse{
+        height: 100vh;
+        text-align: center;
+    }
+    .size{
+        margin-top: -10px;
+    }
+    .welcome-div{
+        padding: 100px 30px 0 30px;
+    }
+    .paragraph{
+        font-size: 14px;
+    }
+    .heading-1{
+        line-height: initial;
+        font-size: 30px;
+    }
+    .paragraph-2{
+        padding-top: 40px;
+        font-size: 16px;
+    }
+    .heading-2 , .available{
+        font-size: 25px;
+    }
+    .c-div{
+         text-align: center;
+     }
+    .heading-3{
+        font-size: 22px;
+        padding-top: 20px;
+        width: 100%;
+    }
+    .paragraph-3{
+        width: 100%;
+    }
+    .visit-saudi{
+        padding-bottom: 650px;
+        background-position: center center;
+    }
+    .visit-saudi h1{
+        font-size: 25px;
+        min-width: 100%;
+    }
+    .order-1{
+        order: 1;
+    }
+    .orders-2{
+        order: 2;
+    }
+    .right{
+        float: none;
+    }
+    .services{
+        font-size: 16px;
+    }
+    .flex-property{
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        padding-top: 30px;
+    }
+    .top-space{
+        margin-top: 20px;
+    }
+    .paragraph-4{
+        width: 100%;
+        padding-top: 10px;
+    }
+    .products{
+        padding-top: 50px;
+    }
+    .product-heading{
+        font-size: 25px;
+        width: 100%;
+    }
+    .product-paragraph{
+        width: 100%;
+        font-size: 16px;
+    }
+    .center-mob{
+        text-align: center;
+    }
+    .center-mob-2{
+        text-align: center;
+        padding-top: 30px;
+    }
+    .heading-5{
+        text-align: center;
+        font-weight: 400;
+    }
+    .heading-2-lorem{
+        padding-top: 10px;
+        font-size: 25px;
+    }
+    .flex-property-2{
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding-top: 30px;
+    }
+    .join{
+        font-size: 22px;
+    }
+    .form-flex{
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        padding-left: 0;
+    }
+    .form-control-input{
+        border: 0;
+        margin-bottom: 10px;
+        border-radius: 20px !important;
+        margin-top: 20px;
+    }
+    .position{
+       position: relative;
+        left: 0;
+        margin-top: 0;
+    }
+
+    .flex-footer{
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    .king{
+        font-size: 16px;
+        padding-top: 20px;
+    }
+    .navbar-nav{
+        gap: 0;
+        position: relative;
+        top: 0;
+    }
+    .width-2{
+        width: 80%;
+    }
+    .width{
+        width: 40%;
+    }
+    .login-btn{
+        margin-top: 0;
+    }
+    .main-forum h1{
+        min-width: 100%;
+        font-size: 25px;
+    }
+    .search-div{
+        display: flex;
+        flex-direction: column;
+        border-radius: 25px;
+        padding-inline: 10px;
+    }
+    .search-input{
+        max-width: 100%;
+    }
+   .new-post-btn{
+        min-width: 100%;
+        height: 40px;
+    }
+    .description-div{
+        margin-inline: 10px;
+    }
+    .description-div ul{
+        align-items: center;
+    }
+    .description-div ul li h3{
+        font-size: 17px;
+    }
+    .description-div ul li button{
+        padding-inline: 12px;
+    }
+    .description-div p{
+        font-size: 18px;
+    }
+    .d-div-2 , .post-div{
+        margin-top: 30px;
+    }
+    .b-left{
+        border-left: 0;
+        padding-left: 10px;
+    }
+    .levels{
+        text-align: center;
+        display: flex;
+        justify-content: center;
+    }
+    .c-head{
+        padding-left: 0;
+    }
+    .map-div{
+        border-radius: 25px;
+    }
+    .signUp-form{
+        min-width: 100%;
+    }
+    .share-something-div{
+        border-radius: 20px;
+        padding-inline: 20px;
+    }
+    .share-div{
+        flex-wrap: wrap;
+    }
+    .social{
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: unset;
+        gap: 14px;
+        margin-top: 20px;
+    }
+    .pic-btn , .vid-btn ,.gif-btn{
+        padding-inline: 10px;
+    }
+    .group-div{
+        background-color: #F5F5F5;
+        padding: 40px 30px;
+        border-radius: 50px;
+    }
+    .g2-flex img{
+        width: 40px;
+        height: 40px;
+    }
+    .g3{
+        flex-direction: column;
+    }
+    .g3 h5{
+        font-size: 16px;
+        margin-top: 50px;
+    }
+    .g-btn{
+        position: relative;
+        top: 30px;
+    }
+    .posted{
+        padding-left: 50px;
+        position: relative;
+        top: -50px;
+        font-size: 10px;
+        width: 80%;
+    }
+    .g-text{
+        font-size: 16px;
+    }
+    .group-div{
+        padding-top: 10px;
+        padding-bottom: 30px;
+    }
+    .sop-img-1{
+        width: 20px;
+        height: 20px;
+    }
+    .sop-img-2{
+        height: 20px;
+        width: 5px;
+    }
+    .group-right{
+        margin-top: 30px;
+    }
+    .levels-div{
+        flex-direction: column;
+        gap: 20px;
+        padding-inline: 20px;
+    }
+    .feedback h1{
+        font-size: 28px;
+        width: 100%;
+    }
+    .f-contact{
+        padding-inline: 20px;
+    }
+    .t-table-section{
+        padding: 10px;
+    }
+    .table{
+        font-size: 12px;
+    }
+    .heat-toggle-btn{
+        font-size: 14px;
+        width: 100%;
+    }
+    .toggle-search{
+        flex-direction: column;
+        padding: 20px;
+        gap: 10px;
+    }
+    .t-input-div{
+        flex-direction: column;
+    }
+    .toggle-input{
+        max-width: 100%;
+    }
+    .t-input-div button{
+        margin-left: 0;
+        margin-top: 10px;
+    }
+    .levels-flex{
+        gap: 50px;
+        flex-direction: column;
+    }
+    .s-div{
+        flex-direction: column;
+        padding-inline: 10px;
+        padding-bottom: 40px;
+    }
+
+}
+@media (min-width: 768px) and (max-width: 991px) {
+    html {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+    .s-div{
+        padding-inline: 20px;
+    }
+    .signUp-form{
+        min-width: 75%;
+    }
+    .navbar-toggler {
+        margin-top: -60px;
+    }
+    .levels-div{
+        padding-inline: 20px;
+        gap: 50px;
+    }
+    .feedback h1{
+        font-size: 35px;
+        width: 100%;
+    }
+    .size {
+        margin-top: -10px;
+    }
+
+    .welcome-div {
+        padding: 100px 0 0 30px;
+    }
+
+    .navbar-nav {
+        gap: 0;
+        position: relative;
+        top: 50px;
+    }
+
+    .login-div {
+        margin-top: 60px;
+    }
+
+    .navbar-collapse {
+        height: 100vh;
+    }
+
+    .visit-saudi {
+        padding-bottom: 700px;
+    }
+
+    .visit-saudi h1 {
+        font-size: 32px;
+    }
+
+    .heading-1 {
+        font-size: 32px;
+        line-height: initial;
+    }
+
+    .paragraph-2 {
+        font-size: 18px;
+    }
+
+    .heading-2 {
+        font-size: 40px;
+    }
+
+    .heading-3 {
+        font-size: 26px;
+        width: 90%;
+    }
+
+    .product-heading {
+        font-size: 32px;
+    }
+
+    .product-paragraph {
+        width: 80%;
+        font-size: 18px;
+    }
+
+    .heading-2-lorem {
+        font-size: 32px;
+    }
+
+    .flex-property-2 {
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    .join {
+        font-size: 24px;
+    }
+
+    .form-flex {
+        width: 70%;
+    }
+
+    .main-forum h1 {
+        font-size: 32px;
+    }
+
+    .search-div {
+        padding-inline: 10px;
+    }
+
+    .search-input {
+        width: 400px;
+    }
+
+    .description-div {
+        margin-inline: 10px;
+    }
+
+    .description-div ul {
+        align-items: center;
+    }
+
+    .description-div h3 {
+        font-size: 18px;
+    }
+
+    .description-div button {
+        padding-inline: 10px;
+    }
+
+    .img-div-p {
+        flex-direction: column;
+    }
+    .post-div h3{
+        font-size: 20px;
+    }
+    .levels-flex{
+        gap: 50px;
+    }
+    .toggle-search{
+        flex-direction: column;
+    }
+    .heat-toggle-btn{
+        width: 100%;
+    }
+    .toggle-input{
+        min-width: 100%;
+    }
+    .t-input-div button{
+        margin-left: -100px;
+        min-width: 100px;
+    }
+}
+@media (min-width: 992px) and (max-width: 1199px){
+    html{
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+   .welcome-div{
+       padding: 150px 0 0 30px;
+   }
+    .welcome-div h1{
+        font-size: 35px;
+        line-height: initial;
+    }
+    .visit-saudi h1{
+        font-size: 35px;
+    }
+    .visit-saudi{
+        padding-bottom: 800px;
+    }
+    .product-description{
+        width: 100%;
+    }
+    .heading-2-lorem{
+        font-size: 35px;
+    }
+    .flex-property-2{
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    .main-forum h1{
+        font-size: 35px;
+    }
+    .search-div{
+        padding-inline: 10px;
+    }
+    .search-input{
+        width: 600px;
+    }
+    .description-div h3{
+        font-size: 20px;
+    }
+    .description-div ul{
+        align-items: center;
+    }
+    .img-div-p{
+        flex-direction: column;
+    }
+    .heat-toggle-btn{
+        font-size: 10px;
+    }
+}
+
+.map-image #map {
+  height: 600px;
+  width: 1450px;
+}

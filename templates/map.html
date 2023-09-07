@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>London Crime Heatmap | Map</title>
+
+  <!-- Bootstrap 5 CDN Links -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous">
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.min.js" integrity="sha384-7VPbUDkoPSGFnVtYi0QogXtr74QeVeeIs99Qfg5YCF+TidwNdjvaKZX19NZ/e6oz" crossorigin="anonymous">
+</script>
+
+  <!-- CSS file -->
+  <link rel="stylesheet" href="style.css" type="text/css">
+
+  <!-- Lato - Google font-->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@400;500;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+
+
+<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=visualization,geometry&callback=initMap" async defer></script>
+<!-- This line fetches heat_data.js from Flask -->
+<script src="/heat_data.js"></script>
+<script type="text/javascript">
+    var heatmap;
+    var map;
+  
+    function zoomToLocation() {
+      var geocoder = new google.maps.Geocoder();
+      var location = document.getElementById("searchInput").value;
+  
+      geocoder.geocode({ 'address': location }, function(results, status) {
+        if (status === 'OK') {
+          map.setCenter(results[0].geometry.location);
+          map.setZoom(15);
+        } else {
+          alert('Geocode was not successful for the following reason: ' + status);
+        }
+      });
+    }
+  
+    function toggleHeatmap() {
+      heatmap.setMap(heatmap.getMap() ? null : map);
+    }
+  
+    let boroughPolygons = [];  // This will hold all the borough polygons.
+    let boroughCrimeCounts = {};  // Object to hold the number of crimes in each borough
+
+// Function to update the table when a borough is clicked
+function updateTable(boroughName) {
+fetch('/get_borough_metrics')  // Make sure to call the correct endpoint
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json();
+  })
+  .then(data => {
+    console.log("Received data:", data);  // Debugging line
+    console.log("Borough name:", boroughName);  // Debugging line
+    
+    if (data !== null && data.hasOwnProperty(boroughName)) {
+      const metrics = data[boroughName];
+      document.getElementById('boroughName').innerText = boroughName;
+      document.getElementById('crimeCount').innerText = 'N/A';  // We're not using crime count anymore
+      document.getElementById('ranking').innerText = metrics['Ranking'];
+      document.getElementById('safetyStatus').innerText = metrics['Safety Status'];
+      document.getElementById('riskLevel').innerText = metrics['Risk Level'];
+    } else {
+      console.error('Borough data is missing or null');
+    }
+  })
+  .catch(error => {
+    console.error('Fetch error:', error);
+  });
+}
+
+function updateWardTable(wardName) {
+const boroughSelect = document.getElementById('table-select');
+const selectedBorough = boroughSelect.value;  // Keep spaces as is
+
+// Normalize borough and ward names: lowercase and remove spaces
+const normalizedBorough = selectedBorough.toLowerCase().replace(" ", "");
+const normalizedWard = wardName.toLowerCase().replace(" ", "");
+
+// Combine normalized borough and ward names
+const fullWardName = `${normalizedBorough}_${normalizedWard}`;
+
+console.log("Looking for metrics for ward:", fullWardName);  // Debugging line
+
+fetch('/get_ward_metrics')
+  .then(response => response.json())
+  .then(data => {
+    console.log("Backend ward metrics:", data);  // Debugging line
+    
+    // Additional debugging lines
+    if (Object.keys(data).includes(fullWardName)) {
+      console.log(`Metrics for ${fullWardName} exist.`);
+    } else {
+      console.log(`Metrics for ${fullWardName} do not exist.`);
+    }
+    
+    const metrics = data[fullWardName];
+    console.log("Specific metric:", metrics);  // Debugging line
+    
+    if (metrics) {
+      document.getElementById('wardName').innerText = wardName;
+      document.getElementById('wardCrimeCount').innerText = metrics['Crime Count'] || 'N/A';
+      document.getElementById('wardRiskLevel').innerText = metrics['Risk Level'] || 'N/A';
+      document.getElementById('wardRanking').innerText = metrics['Ranking'] || 'N/A';
+      document.getElementById('wardSafetyStatus').innerText = metrics['Safety Status'] || 'N/A';
+    } else {
+      console.log(`Metrics for ward ${fullWardName} not found.`);
+    }
+  })
+  .catch(error => {
+    console.log('Fetch error:', error);
+  });
+}
+
+function addBoroughBoundaries() {
+// Fetch borough boundaries and add them to the map
+fetch('/london_boroughs.json')
+  .then(response => response.json())
+  .then(data => {
+    const infoWindow = new google.maps.InfoWindow();  // Create one InfoWindow
+    
+    data.features.forEach(feature => {
+      if (feature.geometry.type === 'MultiPolygon') {
+        feature.geometry.coordinates.forEach(polygon => {
+          const polygonCoords = polygon[0].map(coord => {
+            return { lat: coord[1], lng: coord[0] };
+          });
+
+          // Create a polygon from the coordinates
+          const boroughPolygon = new google.maps.Polygon({
+            paths: polygonCoords,
+            strokeColor: "#000000",
+            strokeOpacity: 0.2,
+            strokeWeight: 1,
+            fillColor: "#FFFFFF",
+            fillOpacity: 0.2
+          });
+
+          boroughPolygon.set("name", feature.properties.name);  // Set the name property
+
+          // Add mouseover event to the polygon
+          google.maps.event.addListener(boroughPolygon, 'mouseover', function(event) {
+            infoWindow.setContent(feature.properties.name);
+            infoWindow.setPosition(event.latLng);
+            infoWindow.open(map);
+          });
+
+          // Add mouseout event to the polygon
+          google.maps.event.addListener(boroughPolygon, 'mouseout', function() {
+            infoWindow.close();
+          });
+
+          // Add click event to the polygon
+          google.maps.event.addListener(boroughPolygon, 'click', function() {
+            const boroughName = this.get("name");
+            fetchAndUpdateBoroughData(boroughName);
+          });
+
+
+          boroughPolygons.push(boroughPolygon);
+          boroughPolygon.setMap(map);  // Make sure the map is defined and accessible here
+          boroughCrimeCounts[feature.properties.name] = 0;
+        });
+      }
+    });
+  });
+}
+
+function toggleBoroughs() {
+const mapRef = (boroughPolygons[0] && boroughPolygons[0].getMap() === null) ? map : null;
+boroughPolygons.forEach(polygon => {
+  polygon.setMap(mapRef);
+});
+}
+
+// Function to convert MultiPolygon coordinates to Google Maps compatible LatLngLiteral
+function convertMultiPolygonToLatLngLiteral(multiPolygon) {
+return multiPolygon.map(polygon =>
+  polygon.map(ring =>
+    ring.map(coord => ({
+      lat: coord[1],
+      lng: coord[0]
+    }))
+  )
+);
+}
+  // Add borough boundaries
+  addBoroughBoundaries();
+  
+    function initMap() {
+      var londonBounds = {
+        north: 51.7,
+        south: 51.3,
+        west: -0.5,
+        east: 0.2
+      };
+  
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 11,
+        center: {lat: 51.5074, lng: -0.1278},
+        mapTypeControl: false,
+        restriction: {
+          latLngBounds: londonBounds,
+          strictBounds: false
+        }
+      });
+  
+    heatmap = new google.maps.visualization.HeatmapLayer({
+      data: heatData.map(point => new google.maps.LatLng(point[0], point[1])),
+      map: map,
+      radius: 40,  // Increased radius for more visibility
+      opacity: 0.8,  // More opaque
+      visible: true,
+      gradient: [  // Custom gradient for better visibility
+        'rgba(0, 255, 255, 0)',
+        'rgba(0, 255, 255, 1)',
+        'rgba(0, 191, 255, 1)',
+        'rgba(0, 127, 255, 1)',
+        'rgba(0, 63, 255, 1)',
+        'rgba(0, 0, 255, 1)',
+        'rgba(0, 0, 223, 1)',
+        'rgba(0, 0, 191, 1)',
+        'rgba(0, 0, 159, 1)',
+        'rgba(0, 0, 127, 1)',
+        'rgba(63, 0, 91, 1)',
+        'rgba(127, 0, 63, 1)',
+        'rgba(191, 0, 31, 1)',
+        'rgba(255, 0, 0, 1)'
+      ]
+    });
+    
+      // King's College London campus markers
+      var kingsCampuses = [
+        {lat: 51.512100, lng: -0.117330, name: 'Strand Campus'},
+        {lat: 51.505370, lng: -0.113239, name: 'Waterloo Campus'},
+        {lat: 51.502946, lng: -0.089088, name: 'Guys Campus'},
+        {lat: 51.467197, lng: -0.090845, name: 'Denmark Hill Campus'},
+        {lat: 51.500100, lng: -0.116640, name: 'St Thomas Campus'}
+      ];
+
+function addCampusMarker(campus) {
+  var marker = new google.maps.Marker({
+  position: new google.maps.LatLng(campus.lat, campus.lng),
+  map: map,
+  title: campus.name,
+  icon: {
+    path: google.maps.SymbolPath.CIRCLE,
+    scale: 10, // size of the circle
+    fillColor: "#00FF00", // green fill color
+    fillOpacity: 1, // fill opacity
+    strokeWeight: 1,
+    strokeColor: "#000000" // black border color
+  }
+});
+
+var infoWindow = new google.maps.InfoWindow({
+  content: `<h3>${campus.name}</h3>`
+});
+
+marker.addListener('mouseover', function() {
+  infoWindow.open(map, marker);
+});
+
+marker.addListener('mouseout', function() {
+  infoWindow.close();
+});
+}
+
+kingsCampuses.forEach(addCampusMarker);
+map.addListener("zoom_changed", function() {
+var zoom = map.getZoom();
+var newRadius = Math.pow(2, zoom);
+if (newRadius > 50) newRadius = 50;
+if (newRadius < 10) newRadius = 10;
+heatmap.setOptions({
+  radius: newRadius
+});
+});
+
+
+    }
+      // Your data for boroughs and wards
+      const boroughsAndWards = {
+        "Barking and Dagenham": ["Abbey", "Alibon", "Barking Riverside", "Beam", "Becontree", "Chadwell Heath", "Eastbrook & Rush Green", "Eastbury", "Gascoigne", "Goresbrook", "Heath", "Longbridge", "Mayesbrook", "Northbury", "Parsloes", "Thames View", "Valence", "Village", "Whalebone"],
+"Barnet": ["Barnet Vale", "Brunswick Park", "Burnt Oak", "Childs Hill", "Colindale North", "Colindale South", "Cricklewood", "East Barnet", "East Finchley", "Edgware", "Edgwarebury", "Finchley Church End", "Friern Barnet", "Garden Suburb", "Golders Green", "Hendon", "High Barnet", "Mill Hill", "Totteridge and Woodside", "Underhill", "West Finchley", "West Hendon", "Whetstone", "Woodhouse"],
+"Bexley": ["Barnehurst", "Belvedere", "Bexleyheath", "Blackfen & Lamorbey", "Blendon & Penhill", "Crayford", "Crook Log", "East Wickham", "Erith", "Falconwood & Welling", "Longlands", "Northumberland Heath", "Sidcup", "Slade Green & Northend", "St Mary’s & St James", "Thamesmead East", "West Heath"],
+"Brent": ["Alperton", "Barnhill", "Brondesbury Park", "Cricklewood & Mapesbury", "Dollis Hill", "Harlesden & Kensal Green", "Kenton", "Kilburn", "Kingsbury", "Northwick Park", "Preston", "Queens Park", "Queensbury", "Roundwood", "Stonebridge", "Sudbury", "Tokyngton", "Welsh Harp", "Wembley Central", "Wembley Hill", "Wembley Park", "Willesden Green"],
+"Bromley": ["Beckenham Town & Copers Cope", "Bickley & Sundridge", "Biggin Hill", "Bromley Common & Holwood", "Bromley Town", "Chelsfield", "Chislehurst", "Clock House", "Crystal Palace & Anerley", "Darwin", "Farnborough & Crofton", "Hayes & Coney Hall", "Kelsey & Eden Park", "Mottingham", "Orpington", "Penge & Cator", "Petts Wood & Knoll", "Plaistow", "Shortlands & Park Langley", "St Mary Cray", "St Paul's Cray", "West Wickham"],
+"Camden": ["Belsize", "Bloomsbury", "Camden Square", "Camden Town", "Fortune Green", "Frognal", "Gospel Oak", "Hampstead Town", "Haverstock", "Highgate", "Holborn & Covent Garden", "Kentish Town North", "Kentish Town South", "Kilburn", "King's Cross", "Primrose Hill", "Regent's Park", "South Hampstead", "St Pancras & Somers Town", "West Hampstead"],
+"Croydon": ["Addiscombe East", "Addiscombe West", "Bensham Manor", "Broad Green", "Coulsdon Town", "Crystal Palace and Upper Norwood", "Fairfield", "Kenley", "New Addington North", "New Addington South", "Norbury and Pollards Hill", "Norbury Park", "Old Coulsdon", "Park Hill and Whitgift", "Purley and Woodcote", "Purley Oaks and Riddlesdown", "Sanderstead", "Selhurst", "Selsdon and Addington Village", "Selsdon Vale and Forestdale", "Shirley North", "Shirley South", "South Croydon", "South Norwood", "Thornton Heath", "Waddon", "West Thornton", "Woodside"],
+"Ealing": ["Central Greenford", "Dormers Wells", "Ealing Broadway", "Ealing Common", "East Acton", "Greenford Broadway", "Hanger Hill", "Hanwell Broadway", "Lady Margaret", "North Acton", "North Greenford", "North Hanwell", "Northfield", "Northolt Mandeville", "Northolt West End", "Norwood Green", "Perivale", "Pitshanger", "South Acton", "Southall Broadway", "Southall Green", "Southall West", "Southfield", "Walpole"],
+"Enfield": ["Arnos Grove", "Bowes", "Brimsdown", "Bullsmoor", "Bush Hill Park", "Carterhatch", "Cockfosters", "Edmonton Green", "Enfield Lock", "Grange Park", "Haselbury", "Highfield", "Jubilee", "Lower Edmonton", "New Southgate", "Oakwood", "Palmers Green", "Ponders End", "Ridgeway", "Southbury", "Southgate", "Town", "Upper Edmonton", "Whitewebbs", "Winchmore Hill"],
+"Greenwich": ["Abbey Wood", "Blackheath Westcombe", "Charlton Hornfair", "Charlton Village & Riverside", "East Greenwich", "Eltham Page", "Eltham Park & Progress", "Eltham Town & Avery Hill", "Greenwich Creekside", "Greenwich Park", "Greenwich Peninsula", "Kidbrooke Park", "Kidbrooke Village & Sutcliffe", "Middle Park & Horn Park", "Mottingham, Coldharbour & New Eltham", "Plumstead & Glyndon", "Plumstead Common", "Shooters Hill", "Thamesmead Moorings", "West Thamesmead", "Woolwich Arsenal", "Woolwich Common", "Woolwich Dockyard"],
+"Hackney": ["Brownswood", "Cazenove", "Clissold", "Dalston", "De Beauvoir", "Hackney Central", "Hackney Downs", "Hackney Wick", "Haggerston", "Homerton", "Hoxton East & Shoreditch", "Hoxton West", "King's Park", "Lea Bridge", "London Fields", "Shacklewell", "Springfield", "Stamford Hill West", "Stoke Newington", "Victoria", "Woodberry Down"],
+"Hammersmith and Fulham": ["Addison", "Avonmore", "Brook Green", "College Park & Old Oak", "Coningham", "Fulham Reach", "Fulham Town", "Grove", "Hammersmith Broadway", "Lillie", "Munster", "Palace and Hurlingham", "Parsons Green & Sandford", "Ravenscourt", "Sands End", "Shepherd's Bush Green", "Walham Green", "Wendell Park", "West Kensington", "White City", "Wormholt"],
+"Haringey": ["Alexandra Park", "Bounds Green", "Bruce Castle", "Crouch End", "Fortis Green", "Harringay", "Hermitage & Gardens", "Highgate", "Hornsey", "Muswell Hill", "Noel Park", "Northumberland Park", "Seven Sisters", "South Tottenham", "St Ann's", "Stroud Green", "Tottenham Central", "Tottenham Hale", "West Green", "White Hart Lane", "Woodside"],
+"Harrow": ["Belmont", "Canons", "Centenary", "Edgware", "Greenhill", "Harrow on the Hill", "Harrow Weald", "Hatch End", "Headstone", "Kenton East", "Kenton West", "Marlborough", "North Harrow", "Pinner", "Pinner South", "Rayners Lane", "Roxbourne", "Roxeth", "Stanmore", "Wealdstone North", "Wealdstone South", "West Harrow"],
+"Havering": ["Beam Park", "Cranham", "Elm Park", "Emerson Park", "Gooshays", "Hacton", "Harold Wood", "Havering-atte-Bower", "Heaton", "Hylands & Harrow Lodge", "Marshalls & Rise Park", "Mawneys", "Rainham & Wennington", "Rush Green & Crowlands", "South Hornchurch", "Squirrels Heath", "St Alban's", "St Andrew's", "St Edward's", "Upminster"],
+"Hillingdon": ["Belmore", "Charville", "Colham & Cowley", "Eastcote", "Harefield Village", "Hayes Town", "Heathrow Villages", "Hillingdon East", "Hillingdon West", "Ickenham & South Harefield", "Northwood", "Northwood Hills", "Pinkwell", "Ruislip", "Ruislip Manor", "South Ruislip", "Uxbridge", "West Drayton", "Wood End", "Yeading", "Yiewsley"],
+"Hounslow": ["Bedfont", "Brentford East", "Brentford West", "Chiswick Gunnersbury", "Chiswick Homefields", "Chiswick Riverside", "Cranford", "Feltham North", "Feltham West", "Hanworth Park", "Hanworth Village", "Heston Central", "Heston East", "Heston West", "Hounslow Central", "Hounslow East", "Hounslow Heath", "Hounslow South", "Hounslow West", "Isleworth", "Osterley & Spring Grove", "Syon & Brentford Lock"],
+"Islington": ["Arsenal", "Barnsbury", "Bunhill", "Caledonian", "Canonbury", "Clerkenwell", "Finsbury Park", "Highbury", "Hillrise", "Holloway", "Junction", "Laycock", "Mildmay", "St Mary's & St James'", "St Peter's & Canalside", "Tollington", "Tufnell Park"],
+"Kensington and Chelsea": ["Abingdon", "Brompton & Hans Town", "Campden", "Chelsea Riverside", "Colville", "Courtfield", "Dalgarno", "Earl's Court", "Golborne", "Holland", "Norland", "Notting Dale", "Pembridge", "Queen's Gate", "Redcliffe", "Royal Hospital", "St Helen's", "Stanley"],
+"Kingston upon Thames": ["Alexandra", "Berrylands", "Canbury Gardens", "Chessington South & Malden Rushett", "Coombe Hill", "Coombe Vale", "Green Lane & St James", "Hook & Chessington North", "King George's & Sunray", "Kingston Gate", "Kingston Town", "Motspur Park & Old Malden East", "New Malden Village", "Norbiton", "Old Malden", "St Mark's & Seething Wells", "Surbiton Hill", "Tolworth", "Tudor"],
+"Lambeth": ["Brixton Acre Lane", "Brixton North", "Brixton Rush Common", "Brixton Windrush", "Clapham Common & Abbeville", "Clapham East", "Clapham Park", "Clapham Town", "Gipsy Hill", "Herne Hill & Loughborough Junction", "Kennington", "Knight's Hill", "Myatt's Fields", "Oval", "St Martin's", "Stockwell East", "Stockwell West & Larkhall", "Streatham Common & Vale", "Streatham Hill East", "Streatham Hill West & Thornton", "Streatham St Leonard's", "Streatham Wells", "Vauxhall", "Waterloo & South Bank", "West Dulwich"],
+"Lewisham": ["Bellingham", "Blackheath", "Brockley", "Catford South", "Crofton Park", "Deptford", "Downham", "Evelyn", "Forest Hill", "Grove Park", "Hither Green", "Ladywell", "Lee Green", "Lewisham Central", "New Cross Gate", "Perry Vale", "Rushey Green", "Sydenham", "Telegraph Hill"],
+"Merton": ["Abbey", "Cannon Hill", "Colliers Wood", "Cricket Green", "Figge's Marsh", "Graveney", "Hillside", "Lavender Fields", "Longthornton", "Lower Morden", "Merton Park", "Pollards Hill", "Ravensbury", "Raynes Park", "St Helier", "Village", "Wandle", "West Barnes", "Wimbledon Park", "Wimbledon Town & Dundonald"],
+"Newham": ["Beckton", "Boleyn", "Canning Town North", "Canning Town South", "Custom House", "East Ham", "East Ham South", "Forest Gate North", "Forest Gate South", "Green Street East", "Green Street West", "Little Ilford", "Manor Park", "Maryland", "Plaistow North", "Plaistow South", "Plaistow West & Canning Town East", "Plashet", "Royal Albert", "Royal Victoria", "Stratford", "Stratford Olympic Park", "Wall End", "West Ham"],
+"Redbridge": ["Aldborough", "Barkingside", "Bridge", "Chadwell", "Churchfields", "Clayhall", "Clementswood", "Cranbrook", "Fairlop", "Fullwell", "Goodmayes", "Hainault", "Ilford Town", "Loxford", "Mayfield", "Monkhams", "Newbury", "Seven Kings", "South Woodford", "Valentines", "Wanstead Park", "Wanstead Village"],
+"Richmond upon Thames": ["Barnes", "East Sheen", "Fulwell & Hampton Hill", "Ham, Petersham & Richmond Riverside", "Hampton", "Hampton North", "Hampton Wick & South Teddington", "Heathfield", "Kew", "Mortlake & Barnes Common", "North Richmond", "South Richmond", "South Twickenham", "St Margarets & North Twickenham", "Teddington", "Twickenham Riverside", "West Twickenham", "Whitton"],
+"Southwark": ["Borough & Bankside", "Camberwell Green", "Champion Hill", "Chaucer", "Dulwich Hill", "Dulwich Village", "Dulwich Wood", "Faraday", "Goose Green", "London Bridge & West Bermondsey", "Newington", "North Bermondsey", "North Walworth", "Nunhead & Queen’s Road", "Old Kent Road", "Peckham", "Peckham Rye", "Rotherhithe", "Rye Lane", "South Bermondsey", "St George’s", "St Giles", "Surrey Docks"],
+"Sutton": ["Beddington", "Belmont", "Carshalton Central", "Carshalton South & Clockhouse", "Cheam", "Hackbridge", "North Cheam", "South Beddington & Roundshaw", "St Helier East", "St Helier West", "Stonecot", "Sutton Central", "Sutton North", "Sutton South", "Sutton West & East Cheam", "The Wrythe", "Wallington North", "Wallington South", "Worcester Park North", "Worcester Park South"],
+"Tower Hamlets": ["Bethnal Green", "Blackwall & Cubitt Town", "Bow East", "Bow West", "Bromley North", "Bromley South", "Canary Wharf", "Island Gardens", "Lansbury", "Limehouse", "Mile End", "Poplar", "St Dunstan's", "St Katharine's & Wapping", "St Peter's", "Shadwell", "Spitalfields & Banglatown", "Stepney Green", "Weavers", "Whitechapel"],
+"Waltham Forest": ["Cann Hall", "Cathall", "Chapel End", "Chingford Green", "Endlebury", "Forest", "Grove Green", "Hale End & Highams Park South", "Hatch Lane & Highams Park North", "High Street", "Higham Hill", "Hoe Street", "Larkswood", "Lea Bridge", "Leyton", "Leytonstone", "Markhouse", "St James", "Upper Walthamstow", "Valley", "William Morris", "Wood Street"],
+"Wandsworth": ["Balham", "Battersea Park", "East Putney", "Falconbrook", "Furzedown", "Lavender", "Nine Elms", "Northcote", "Roehampton", "Shaftesbury & Queenstown", "South Balham", "Southfields", "St Mary's", "Thamesfield", "Tooting Bec", "Tooting Broadway", "Trinity", "Wandle", "Wandsworth Common", "Wandsworth Town", "West Hill", "West Putney"],
+"Westminster": ["Abbey Road", "Bayswater", "Church Street", "Harrow Road", "Hyde Park", "Knightsbridge & Belgravia", "Lancaster Gate", "Little Venice", "Maida Vale", "Marylebone", "Pimlico North", "Pimlico South", "Queen's Park", "Regent's Park", "St James's", "Vincent Square", "West End", "Westbourne"]
+      };
+  
+      // Populate the borough dropdown on page load
+      window.onload = function() {
+        const boroughSelect = document.getElementById('table-select');
+        for (const borough in boroughsAndWards) {
+          const option = document.createElement('option');
+          option.value = borough;
+          option.text = borough;
+          boroughSelect.add(option);
+        }
+      };
+  
+      // Function to populate wards based on selected borough
+function populateWards() {
+const boroughSelect = document.getElementById('boroughSelect');
+const wardSelect = document.getElementById('wardSelect');
+const selectedBorough = boroughSelect.value;
+
+// Clear existing options in ward dropdown
+wardSelect.innerHTML = '<option value="" disabled selected>Select Ward</option>';
+
+// Get the wards for the selected borough
+const wards = boroughsAndWards[selectedBorough];
+
+// Populate the ward dropdown
+for (const ward of wards) {
+  const option = document.createElement('option');
+  option.value = ward;
+  option.text = ward;
+  wardSelect.add(option);
+}
+
+// Fetch and update the borough data for the table
+fetchAndUpdateBoroughData(selectedBorough);
+}
+      function fetchAndUpdateBoroughData(boroughName) {
+        fetch('/get_borough_crime_counts')
+        .then(response => response.json())
+        .then(data => {
+          const crimeCount = data[boroughName] || 0;
+          updateTable(boroughName, crimeCount);
+          });
+      }
+// Function to fetch and update ward data
+function fetchAndUpdateWardData(wardName) {
+const boroughSelect = document.getElementById('boroughSelect');
+const selectedBorough = boroughSelect.value;
+
+fetch(`/get_ward_data/${selectedBorough}`)
+.then(response => response.json())
+.then(data => {
+  updateWardTable(wardName);
+});
+}
+
+// Wrap the event listener in a DOMContentLoaded event
+document.addEventListener("DOMContentLoaded", function() {
+// Using the dropdown with id "wardSelect" for selecting wards
+const wardSelectElement = document.getElementById("wardSelect");
+
+if (wardSelectElement) { // Check if the element exists
+  wardSelectElement.addEventListener("change", function() {
+    const selectedWard = this.value; // Get the selected ward from the dropdown
+    
+    // Fetch the ward crime counts from the server
+    fetch(`/get_ward_crime_counts?ward=${selectedWard}`)
+      .then(response => response.json())
+      .then(data => {
+        updateWardTable(selectedWard);
+      })
+      .catch(error => {
+        console.error("Error fetching ward crime counts:", error);
+      });
+  });
+} else {
+  console.error("Element with ID 'wardSelect' not found.");
+}
+});
+</script>
+</head>
+<body>
+<!-- navbar -->
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+    </div>
+  </div>
+</nav>
+
+<!-- hero section -->
+<main class="main-forum">
+  <div class="container">
+    <h5>Map</h5>
+    <h1>London crime heatmap: a visual analysis</h1>
+  </div>
+</main>
+
+<!-- Functional Map -->
+<section class="map-image">
+  <div id="map"></div>
+</section>
+
+<!-- levels -->
+<section class="levels-section">
+  <div class="container">
+
+    <div class="levels-div">
+      <!-- toggle search -->
+      <div class="toggle-search">
+        <div>
+          <button class="btn heat-toggle-btn" id="toggleHeatmapButton" onclick="toggleHeatmap()">Toggle Heatmap</button>
+        </div>
+        <div>
+          <button class="btn heat-toggle-btn" id="toggleBoroughButton" onclick="toggleBoroughs()">Toggle Boroughs</button>
+        </div>
+        <div class="t-input-div">
+          <div class="toggle-input">
+            <input type="search" class="form-control" id="searchInput" placeholder="Enter Location">
+          </div>
+          <div>
+            <button class="btn heat-toggle-btn" id="searchButton" onclick="zoomToLocation()">Search</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="levels-flex">
+        <div>
+          <h5 class="c-head">Crime Levels:</h5>
+          <ul class="levels">
+            <li><div class="c1"></div>  <h6>High Crime
+              Zone</h6></li>
+            <li><div class="c2"></div>  <h6>Mid Crime
+              Zone</h6></li>
+            <li><div class="c3"></div>  <h6>Low Crime
+              Zone</h6></li>
+          </ul>
+        </div>
+        <div>
+          <h5 class="c-head">College Campuses:</h5>
+          <ul class="levels">
+            <li><div class="c4"></div>  <h6>College Campus</h6></li>
+          </ul>
+        </div>
+      </div>
+      </div>
+  </div>
+</section>
+
+<!-- Background & Methodologies -->
+<section class="method">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-6 col-md-6 col-sm-12">
+        <h4 class="c-head-2">Background:</h4>
+        <p>Welcome to this interactive map designed to offer an overview of crime statistics in London, specifically tailored for students of King’s College. As you explore the map, you’ll find highlighted areas of crimes have occurred from June 2022 to June 2023. This project aims to raise awareness about safety and help students make informed decisions about their surroundings.
+        </p>
+      </div>
+      <div class="col-lg-6 col-md-6 col-sm-12">
+        <h4 class="c-head-2">Data Source And Methodology:</h4>
+        <p>The data presented here is sourced from the UK Police Data Archive, gathered from the Metropolitan Police Force and the City of London Police Force. The information spans from June 2022 to June 2023 and showcases 1% of the crimes reported each month to provide a snapshot of criminal activity in London. The map was created using the Google Maps API to offer an intuitive and visually appealing interface. The design ensures that crime data points overlay the map without obscuring the city geographical features, making both the data and map visible..</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- disclaimer -->
+<div class="disclaimer">
+  <div class="container">
+    <h3 class="fw-bold pt-4">Disclaimer</h3>
+    <p>The information, data, and map presented on this page are intended solely for informational and educational purposes. They are not to be construed as a comprehensive or complete representation of crime rates or criminal activity in London or any other region. The data is subject to limitations including but not limited to data sampling, technological constraints, and reporting inconsistencies. The map displays only a fraction (approximately 1%) of reported crimes each month and should not be considered an exhaustive or fully accurate account of crime in the area.
+
+      While every effort has been made to ensure the accuracy and reliability of the content on this page, I cannot guarantee its completeness or suitability for any purpose. I expressly disclaim any responsibility or liability for any actions taken or not taken based on the information provided herein. For a more complete and accurate understanding of crime statistics and rates, consult official police records, and engage directly with law enforcement agencies.
+      
+      By accessing, viewing, or using any part of this page, including the map, you agree to use the information responsibly. You also acknowledge and accept the limitations and potential inaccuracies in the data and the content as a whole. Your use of the information is at your own risk, and you assume full responsibility for any consequences arising from such use.
+    </p>
+  </div>
+</div>
+
+<!-- Feedback -->
+<section class="feedback">
+  <div class="container">
+    <h5>FEEDBACK</h5>
+    <h1>Your Feedback is Valuable</h1>
+    <p>Welcome
+      Your insights and observations are valuable to me. If you have any feedback regarding the map, its data, or any other component, please don't hesitate to reach out. Your input can help improve this resource for everyone.
+    </p>
+  </div>
+</section>
+
+<!-- Feedback contact -->
+<div class="container">
+  <div class="f-contact">
+    <h2 class="fw-bold">For feedback, please contact:</h2>
+    <a href="mailto:abdullah.alotaishan@kcl.ac.uk" class="mail-link">abdullah.alotaishan@kcl.ac.uk</a>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="container">
+  <div class="t-table-section">
+    <div class="s-div">
+      <select id="boroughSelect" class="table-select" onchange="populateWards()">
+        <option value="" disabled selected>Select Borough</option>
+          <option value="Barking and Dagenham">Barking and Dagenham</option>
+          <option value="Barnet">Barnet</option>
+          <option value="Bexley">Bexley</option>
+          <option value="Brent">Brent</option>
+          <option value="Bromley">Bromley</option>
+          <option value="Camden">Camden</option>
+          <option value="City of London">City of London</option>
+          <option value="Croydon">Croydon</option>
+          <option value="Ealing">Ealing</option>
+          <option value="Enfield">Enfield</option>
+          <option value="Greenwich">Greenwich</option>
+          <option value="Hackney">Hackney</option>
+          <option value="Hammersmith and Fulham">Hammersmith and Fulham</option>
+          <option value="Haringey">Haringey</option>
+          <option value="Harrow">Harrow</option>
+          <option value="Havering">Havering</option>
+          <option value="Hillingdon">Hillingdon</option>
+          <option value="Hounslow">Hounslow</option>
+          <option value="Islington">Islington</option>
+          <option value="Kensington and Chelsea">Kensington and Chelsea</option>
+          <option value="Kingston upon Thames">Kingston upon Thames</option>
+          <option value="Lambeth">Lambeth</option>
+          <option value="Lewisham">Lewisham</option>
+          <option value="Merton">Merton</option>
+          <option value="Newham">Newham</option>
+          <option value="Redbridge">Redbridge</option>
+          <option value="Richmond upon Thames">Richmond upon Thames</option>
+          <option value="Southwark">Southwark</option>
+          <option value="Sutton">Sutton</option>
+          <option value="Tower Hamlets">Tower Hamlets</option>
+          <option value="Waltham Forest">Waltham Forest</option>
+          <option value="Wandsworth">Wandsworth</option>
+          <option value="Westminster">Westminster</option>
+      </select>
+
+      <select id="wardSelect" class="table-select">
+        <option>Select Ward</option>
+      </select>
+    </div>
+
+    <table class="table">
+      <caption class="text-center fw-bold text-dark">Borough Data</caption>
+      <thead>
+      <tr>
+        <th>Borough Data</th>
+        <th>Crime Count</th>
+        <th>Risk Level</th>
+        <th>Ranking</th>
+        <th>Safety Status</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td id="boroughName">N/A</td>
+        <td id="crimeCount">N/A</td>
+        <td id="riskLevel">N/A</td>
+        <td id="ranking">N/A</td>
+        <td id="safetyStatus">N/A</td>
+      </tr>
+      </tbody>
+    </table>
+
+    <br>
+    <br>
+
+    <table class="table">
+      <caption class="text-center fw-bold text-dark">Ward Data</caption>
+      <thead>
+      <tr>
+        <th>Ward Name</th>
+        <th>Ward Crime Count</th>
+        <th>Ward Risk Level</th>
+        <th>Ward Ranking</th>
+        <th>Ward Safety Status</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td id="wardName">N/A</td>
+        <td id="wardCrimeCount">N/A</td>
+        <td id="wardRiskLevel">N/A</td>
+        <td id="wardRanking">N/A</td>
+        <td id="wardSafetyStatus">N/A</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>
