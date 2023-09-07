@@ -1,0 +1,38 @@
+# Python files
+__pycache__/
+*.py[cod]
+*.env
+*.venv
+*.egg-info/
+dist/
+
+# Flask files
+instance/
+.webassets-cache
+
+# macOS files
+.DS_Store
+
+# HTML, CSS, and JavaScript files
+# Usually, you'd want to include these in your repo, but if you have any generated or temporary files, add them here
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+
+# Logs and databases
+*.log
+*.sqlite
+
+# OS generated files
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Other
+*.bak
+*.swp
+*~
