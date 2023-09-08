@@ -212,6 +212,7 @@ return multiPolygon.map(polygon =>
           latLngBounds: londonBounds,
           strictBounds: false
         }
+        gestureHandling: 'greedy'
       });
   
     heatmap = new google.maps.visualization.HeatmapLayer({
