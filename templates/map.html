@@ -275,6 +275,11 @@ marker.addListener('mouseover', function() {
 marker.addListener('mouseout', function() {
   infoWindow.close();
 });
+
+// New click event for mobile
+marker.addListener('click', function() {
+  infoWindow.open(map, marker);
+});
 }
 
 kingsCampuses.forEach(addCampusMarker);
