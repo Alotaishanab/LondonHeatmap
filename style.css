@@ -705,6 +705,6 @@ thead{
 }
 
 .map-image #map {
-  height: 600px;
-  width: 1450px;
+  height: 100vh;
+  width: 100%;
 }
