@@ -211,9 +211,10 @@ return multiPolygon.map(polygon =>
         restriction: {
           latLngBounds: londonBounds,
           strictBounds: false
-        }
+        },
         gestureHandling: 'greedy'
       });
+    
   
     heatmap = new google.maps.visualization.HeatmapLayer({
       data: heatData.map(point => new google.maps.LatLng(point[0], point[1])),
